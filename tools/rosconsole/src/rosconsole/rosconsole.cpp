@@ -110,6 +110,8 @@ const char* g_format_string = "[${severity}] [${time}]: ${message}";
 typedef std::map<std::string, std::string> M_string;
 M_string g_extra_fixed_tokens;
 
+bool g_color = true;
+ 
 void setFixedFilterToken(const std::string& key, const std::string& val)
 {
   g_extra_fixed_tokens[key] = val;
@@ -383,14 +385,20 @@ void Formatter::print(void* logger_handle, ::ros::console::Level level, const ch
   ROS_ASSERT(color != NULL);
 
   std::stringstream ss;
-  ss << color;
+  if (g_color)
+  {
+    ss << color;
+  }
   V_Token::iterator it = tokens_.begin();
   V_Token::iterator end = tokens_.end();
   for (; it != end; ++it)
   {
     ss << (*it)->getString(logger_handle, level, str, file, function, line);
   }
-  ss << COLOR_NORMAL;
+  if (g_color)
+  {
+    ss << COLOR_NORMAL;
+  }
 
   fprintf(f, "%s\n", ss.str().c_str());
 }
@@ -424,6 +432,12 @@ void initialize()
     g_formatter.init(g_format_string);
     backend::function_notifyLoggerLevelsChanged = notifyLoggerLevelsChanged;
     backend::function_print = _print;
+
+    std::string no_color;
+    if (get_environment_variable(no_color, "NO_COLOR"))
+    {
+      g_color = false;
+    }
 
     ::ros::console::impl::initialize();
     g_initialized = true;
